@@ -29,6 +29,7 @@ import lombok.experimental.Accessors;
 import net.kyori.adventure.key.Key;
 import net.william278.husksync.HuskSync;
 import net.william278.husksync.user.OnlineUser;
+import org.apache.commons.text.WordUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -146,6 +147,12 @@ public interface Data {
                       @SerializedName("show_particles") boolean showParticles,
                       @SerializedName("has_icon") boolean hasIcon) {
 
+            @NotNull
+            private String asString() {
+                return "[❌] %s %s (⏰ %d:%02d)".formatted(WordUtils.capitalizeFully(type()),
+                        amplifier(), duration() / (60 * 1000), (duration() / 1000) % 60);
+            }
+
         }
 
     }
@@ -167,6 +174,7 @@ public interface Data {
 
         void setCompleted(@NotNull List<Advancement> completed);
 
+        @NoArgsConstructor(access = AccessLevel.PRIVATE)
         class Advancement {
             @SerializedName("key")
             private String key;
@@ -177,10 +185,6 @@ public interface Data {
             private Advancement(@NotNull String key, @NotNull Map<String, Date> completedCriteria) {
                 this.key = key;
                 this.completedCriteria = adaptDateMap(completedCriteria);
-            }
-
-            @SuppressWarnings("unused")
-            private Advancement() {
             }
 
             @NotNull

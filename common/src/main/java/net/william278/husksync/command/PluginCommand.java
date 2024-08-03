@@ -22,6 +22,7 @@ package net.william278.husksync.command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.william278.husksync.HuskSync;
+import net.william278.husksync.data.Identifier;
 import net.william278.husksync.user.CommandUser;
 import net.william278.husksync.user.User;
 import net.william278.uniform.BaseCommand;
@@ -97,6 +98,18 @@ public abstract class PluginCommand extends Command {
                 throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(reader);
             }
         }, (context, builder) -> builder.buildFuture());
+    }
+
+    @NotNull
+    protected <S> ArgumentElement<S, Identifier> identifier(@NotNull String name) {
+        return new ArgumentElement<>(name, reader -> {
+            final String prefixed = !name.contains(":") ? "husksync:%s".formatted(name) : name;
+            return plugin.getIdentifier(prefixed).orElseThrow(() -> CommandSyntaxException.
+                    BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(reader));
+        }, (context, builder) -> {
+            plugin.getRegisteredDataTypes().stream().map(d -> d.getKey().asString()).forEach(builder::suggest);
+            return builder.buildFuture();
+        });
     }
 
     public enum Type {
