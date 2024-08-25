@@ -17,3 +17,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v3    
       - name: 'Build with Gradle 🏗️'
         run: ./gradlew clean build
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HuskSync
+          path: target/*.jar
