@@ -29,4 +29,4 @@ jobs:
           automatic_release_tag: "latest"
           title: "Automated Build ${{ github.run_number }}"
           prerelease: true
-          files: target/*.jar
+          files: target/HuskSync-Paper-*.jar
