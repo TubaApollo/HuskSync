@@ -25,8 +25,8 @@ jobs:
       - name: Create and Upload Release
         uses: marvinpinto/action-automatic-releases@latest
         with:
-          repo_token: ${{ github.github_token }}
-          automatic_release_tag: ${{ github.run_number }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
           title: "Automated Build ${{ github.run_number }}"
           prerelease: true
           files: target/*.jar
