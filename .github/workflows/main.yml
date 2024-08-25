@@ -28,5 +28,5 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           title: "Automated Build ${{ github.run_number }}"
-          prerelease: true
+          prerelease: false
           files: target/HuskSync-Paper-*.jar
