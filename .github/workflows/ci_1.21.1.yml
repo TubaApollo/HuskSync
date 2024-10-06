@@ -11,7 +11,6 @@ on:
 permissions:
   contents: read
   checks: write
-  releases: write
 
 jobs:
   build:
@@ -58,15 +57,13 @@ jobs:
           draft: true
           prerelease: false
       - name: 'Upload Release Assets '
-        needs: create_release
         uses: actions/upload-artifact@v3
         with:
           name: HuskSync-${{ env.version_name }}-mc.1.21.1
           path: target/
           retention-days: 30
       - name: 'Publish Release '
-        needs: upload_artifact
         uses: actions/publish-release@v1
         with:
           allow_updates: true
-          release_id: ${{ needs.create_release.outputs.release_id }}
+          release_id: ${{ steps.create_release.outputs.release_id }}
