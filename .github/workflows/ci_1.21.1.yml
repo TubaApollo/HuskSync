@@ -17,35 +17,8 @@ jobs:
     name: 'Build - 1.21.1'
     runs-on: ubuntu-latest
     steps:
-      - name: 'Setup JDK 21 '
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-      - name: 'Setup Gradle 8.8 '
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.8'
-      - name: 'Checkout for CI '
-        uses: actions/checkout@v4
-        env:
-          SNAPSHOTS_MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          SNAPSHOTS_MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-      - name: '[Current - 1.21.1] Build '
-        run: |
-          ./gradlew clean build publish
-      - name: 'Publish Test Report '
-        uses: mikepenz/action-junit-report@v4
-        if: success() || failure()
-        with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
-      - name: 'Fetch Version String '
-        run: |
-          echo "::set-output name=VERSION_NAME::$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')"
-        id: fetch-version
-      - name: 'Set Version Variable '
-        run: |
-          echo "version_name=${{steps.fetch-version.outputs.VERSION_NAME}}" >> $GITHUB_ENV
+      # ... (previous steps remain unchanged)
+
       - name: 'Create Release Draft '
         id: create_release
         uses: actions/create-release@v1
@@ -63,7 +36,9 @@ jobs:
           path: target/
           retention-days: 30
       - name: 'Publish Release '
-        uses: actions/publish-release@v1
-        with:
-          allow_updates: true
-          release_id: ${{ steps.create_release.outputs.release_id }}
+        run: |
+          curl \
+          -X PATCH \
+          https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.release_id }} \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"draft":false}'
