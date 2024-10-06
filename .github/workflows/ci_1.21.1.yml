@@ -11,58 +11,62 @@ on:
 permissions:
   contents: read
   checks: write
+  releases: write
 
 jobs:
   build:
     name: 'Build - 1.21.1'
     runs-on: ubuntu-latest
     steps:
-      - name: 'Setup JDK 21 📦'
+      - name: 'Setup JDK 21 '
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: 'Setup Gradle 8.8 🏗️'
+      - name: 'Setup Gradle 8.8 '
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.8'
-      - name: 'Checkout for CI 🛎️'
+      - name: 'Checkout for CI '
         uses: actions/checkout@v4
         env:
           SNAPSHOTS_MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           SNAPSHOTS_MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-      - name: '[Current - 1.21.1] Build 🛎️'
+      - name: '[Current - 1.21.1] Build '
         run: |
           ./gradlew clean build publish
-      - name: 'Publish Test Report 📊'
+      - name: 'Publish Test Report '
         uses: mikepenz/action-junit-report@v4
-        if: success() || failure() # Continue on failure
+        if: success() || failure()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
-      - name: 'Fetch Version String 📝'
+      - name: 'Fetch Version String '
         run: |
           echo "::set-output name=VERSION_NAME::$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')"
         id: fetch-version
-      - name: 'Set Version Variable 📝'
+      - name: 'Set Version Variable '
         run: |
           echo "version_name=${{steps.fetch-version.outputs.VERSION_NAME}}" >> $GITHUB_ENV
-      - name: 'Publish to William278.net 🚀'
-        uses: WiIIiam278/bones-publish-action@v1
+      - name: 'Create Release Draft '
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          api-key: ${{ secrets.BONES_API_KEY }}
-          project: 'husksync'
-          channel: 'alpha'
-          version: ${{ env.version_name }}
-          changelog: ${{ github.event.head_commit.message }}
-          distro-names: |
-            paper-1.21.1
-            fabric-1.21.1
-          distro-groups: |
-            paper
-            fabric
-          distro-descriptions: |
-            Paper 1.21.1
-            Fabric 1.21.1
-          files: |
-            target/HuskSync-Paper-${{ env.version_name }}+mc.1.21.1.jar
-            target/HuskSync-Fabric-${{ env.version_name }}+mc.1.21.1.jar
+          tag_name: v${{ env.version_name }}
+          release_name: HuskSync v${{ env.version_name }}
+          draft: true
+          prerelease: false
+      - name: 'Upload Release Assets '
+        needs: create_release
+        uses: actions/upload-artifact@v3
+        with:
+          name: HuskSync-${{ env.version_name }}-mc.1.21.1
+          path: target/
+          retention-days: 30
+      - name: 'Publish Release '
+        needs: upload_artifact
+        uses: actions/publish-release@v1
+        with:
+          allow_updates: true
+          release_id: ${{ needs.create_release.outputs.release_id }}
