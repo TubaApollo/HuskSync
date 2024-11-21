@@ -1,7 +1,7 @@
 name: CI Tests
 on:
   push:
-    branches: [ 'master' ]
+    branches: [ 'minecraft/1.21.1' ]
     paths-ignore:
       - 'docs/**'
       - 'workflows/**'
@@ -25,14 +25,16 @@ jobs:
           gradle-version: '8.8'
       - name: 'Checkout for CI 🛎️'
         uses: actions/checkout@v4
-        env:
-          SNAPSHOTS_MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          SNAPSHOTS_MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        with:
+          ref: 'minecraft/1.21.1'
       - name: '[Current - 1.21.1] Build 🛎️'
         run: |
           ./gradlew clean build publish
+        env:
+          SNAPSHOTS_MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          SNAPSHOTS_MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
       - name: 'Publish Test Report 📊'
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v5
         if: success() || failure() # Continue on failure
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

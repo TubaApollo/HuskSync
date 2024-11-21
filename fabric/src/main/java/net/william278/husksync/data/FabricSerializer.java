@@ -142,17 +142,6 @@ public abstract class FabricSerializer {
 
     private interface ItemDeserializer {
 
-        int VERSION1_16_5 = 2586;
-        int VERSION1_17_1 = 2730;
-        int VERSION1_18_2 = 2975;
-        int VERSION1_19_2 = 3120;
-        int VERSION1_19_4 = 3337;
-        int VERSION1_20_1 = 3465;
-        int VERSION1_20_2 = 3578; // Future
-        int VERSION1_20_4 = 3700; // Future
-        int VERSION1_20_5 = 3837; // Future
-        int VERSION1_21 = 3953; // Future
-
         @NotNull
         default ItemStack[] getItems(@NotNull NbtCompound tag, @NotNull Version mcVersion, @NotNull FabricHuskSync plugin) {
             try {
@@ -186,7 +175,7 @@ public abstract class FabricSerializer {
                 if (item == null || item.isEmpty()) {
                     continue;
                 }
-                NbtCompound entry = (NbtCompound) item.encode(registryManager);
+                NbtCompound entry = (NbtCompound) item.toNbt(registryManager);
                 entry.putInt("Slot", i);
                 itemList.add(entry);
             }
@@ -213,31 +202,14 @@ public abstract class FabricSerializer {
             return itemStacks;
         }
 
-
         @NotNull
         @SuppressWarnings({"rawtypes", "unchecked"}) // For NBTOps lookup
         private NbtCompound upgradeItemData(@NotNull NbtCompound tag, @NotNull Version mcVersion,
                                             @NotNull FabricHuskSync plugin) {
             return (NbtCompound) plugin.getMinecraftServer().getDataFixer().update(
                     TypeReferences.ITEM_STACK, new Dynamic<Object>((DynamicOps) NbtOps.INSTANCE, tag),
-                    getDataVersion(mcVersion), getDataVersion(plugin.getMinecraftVersion())
+                    plugin.getDataVersion(mcVersion), plugin.getDataVersion(plugin.getMinecraftVersion())
             ).getValue();
-        }
-
-        private int getDataVersion(@NotNull Version mcVersion) {
-            return switch (mcVersion.toStringWithoutMetadata()) {
-                case "1.16", "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5" -> VERSION1_16_5;
-                case "1.17", "1.17.1" -> VERSION1_17_1;
-                case "1.18", "1.18.1", "1.18.2" -> VERSION1_18_2;
-                case "1.19", "1.19.1", "1.19.2" -> VERSION1_19_2;
-                case "1.19.4" -> VERSION1_19_4;
-                case "1.20", "1.20.1" -> VERSION1_20_1;
-                case "1.20.2" -> VERSION1_20_2; // Future
-                case "1.20.4" -> VERSION1_20_4; // Future
-                case "1.20.5", "1.20.6" -> VERSION1_20_5; // Future
-                case "1.21" -> VERSION1_21; // Future
-                default -> VERSION1_20_1; // Current supported ver
-            };
         }
 
     }

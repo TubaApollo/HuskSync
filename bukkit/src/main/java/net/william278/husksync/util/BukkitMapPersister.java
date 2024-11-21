@@ -122,7 +122,8 @@ public interface BukkitMapPersister {
             }
 
             // Render the map
-            final PersistentMapCanvas canvas = new PersistentMapCanvas(view);
+            final int dataVersion = getPlugin().getDataVersion(getPlugin().getMinecraftVersion());
+            final PersistentMapCanvas canvas = new PersistentMapCanvas(view, dataVersion);
             for (MapRenderer renderer : view.getRenderers()) {
                 renderer.render(view, canvas, delegateRenderer);
                 getPlugin().debug(String.format("Rendered locked map canvas to view (#%s)", view.getId()));
@@ -140,6 +141,7 @@ public interface BukkitMapPersister {
 
     @NotNull
     private ItemStack applyMapView(@NotNull ItemStack map) {
+        final int dataVersion = getPlugin().getDataVersion(getPlugin().getMinecraftVersion());
         final MapMeta meta = Objects.requireNonNull((MapMeta) map.getItemMeta());
         NBT.get(map, nbt -> {
             if (!nbt.hasTag(MAP_DATA_KEY)) {
@@ -178,8 +180,9 @@ public interface BukkitMapPersister {
             final MapData canvasData;
             try {
                 getPlugin().debug("Deserializing map data from NBT and generating view...");
-                canvasData = MapData.fromByteArray(Objects.requireNonNull(mapData.getByteArray(MAP_PIXEL_DATA_KEY),
-                        "Map pixel data is null"));
+                canvasData = MapData.fromByteArray(
+                        dataVersion,
+                        Objects.requireNonNull(mapData.getByteArray(MAP_PIXEL_DATA_KEY), "Pixel data null!"));
             } catch (Throwable e) {
                 getPlugin().log(Level.WARNING, "Failed to deserialize map data from NBT", e);
                 return;
@@ -294,6 +297,7 @@ public interface BukkitMapPersister {
     /**
      * A {@link MapRenderer} that can be used to render persistently serialized {@link MapData} to a {@link MapView}
      */
+    @SuppressWarnings("deprecation")
     class PersistentMapRenderer extends MapRenderer {
 
         private final MapData canvasData;
@@ -308,7 +312,7 @@ public interface BukkitMapPersister {
             // We set the pixels in this order to avoid the map being rendered upside down
             for (int i = 0; i < 128; i++) {
                 for (int j = 0; j < 128; j++) {
-                    canvas.setPixelColor(j, i, canvasData.getMapColorAt(i, j));
+                    canvas.setPixel(j, i, (byte) canvasData.getColorAt(i, j));
                 }
             }
 
@@ -355,13 +359,16 @@ public interface BukkitMapPersister {
     /**
      * A {@link MapCanvas} implementation used for pre-rendering maps to be converted into {@link MapData}
      */
+    @SuppressWarnings("deprecation")
     class PersistentMapCanvas implements MapCanvas {
 
+        private final int mapDataVersion;
         private final MapView mapView;
         private final int[][] pixels = new int[128][128];
         private MapCursorCollection cursors;
 
-        private PersistentMapCanvas(@NotNull MapView mapView) {
+        private PersistentMapCanvas(@NotNull MapView mapView, int mapDataVersion) {
+            this.mapDataVersion = mapDataVersion;
             this.mapView = mapView;
         }
 
@@ -397,24 +404,24 @@ public interface BukkitMapPersister {
         @Override
         @Deprecated
         public byte getBasePixel(int x, int y) {
-            return getPixel(x, y);
+            return (byte) pixels[x][y];
         }
 
         @Override
-        public void setPixelColor(int i, int i1, @Nullable Color color) {
-            pixels[i][i1] = color == null ? 0 : color.getRGB();
+        public void setPixelColor(int x, int y, @Nullable Color color) {
+            pixels[x][y] = color == null ? -1 : MapPalette.matchColor(color);
         }
 
         @Nullable
         @Override
         public Color getPixelColor(int x, int y) {
-            return getBasePixelColor(x, y);
+            return MapPalette.getColor((byte) pixels[x][y]);
         }
 
         @NotNull
         @Override
         public Color getBasePixelColor(int x, int y) {
-            return new Color(pixels[x][y]);
+            return MapPalette.getColor((byte) pixels[x][y]);
         }
 
         @Override
@@ -459,7 +466,7 @@ public interface BukkitMapPersister {
                 }
 
             }
-            return MapData.fromPixels(pixels, getDimension(), (byte) 2, banners, List.of());
+            return MapData.fromPixels(mapDataVersion, pixels, getDimension(), (byte) 2, banners, List.of());
         }
     }
 

@@ -1,10 +1,10 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'com.gradleup.shadow' version '8.3.2'
+    id 'com.gradleup.shadow' version '8.3.4'
     id 'org.cadixdev.licenser' version '0.6.1' apply false
-    id 'fabric-loom' version '1.7-SNAPSHOT' apply false
-    id 'org.ajoberstar.grgit' version '5.2.2'
+    id 'fabric-loom' version "$fabric_loom_version" apply false
+    id 'org.ajoberstar.grgit' version '5.3.0'
     id 'maven-publish'
     id 'java'
 }
@@ -64,6 +64,7 @@ allprojects {
     apply plugin: 'java'
 
     compileJava.options.encoding = 'UTF-8'
+    compileJava.options.compilerArgs += ['-Xlint:unchecked', '-Xlint:deprecation']
     compileJava.options.release.set Integer.parseInt(rootProject.ext.javaVersion)
     javadoc.options.encoding = 'UTF-8'
     javadoc.options.addStringOption('Xdoclint:none', '-quiet')
@@ -85,9 +86,9 @@ allprojects {
     }
 
     dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.1'
-        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.1'
-        testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
     }
 
     test {

@@ -32,7 +32,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.kyori.adventure.platform.AudienceProvider;
-import net.kyori.adventure.platform.fabric.FabricServerAudiences;
+import net.kyori.adventure.platform.modcommon.MinecraftServerAudiences;
 import net.minecraft.server.MinecraftServer;
 import net.william278.desertwell.util.Version;
 import net.william278.husksync.adapter.DataAdapter;
@@ -78,10 +78,23 @@ import java.util.logging.Level;
 
 @Getter
 @NoArgsConstructor
+@SuppressWarnings("unchecked")
 public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, FabricTask.Supplier,
         FabricEventDispatcher {
 
     private static final String PLATFORM_TYPE_ID = "fabric";
+
+    private static final int VERSION1_16_5 = 2586;
+    private static final int VERSION1_17_1 = 2730;
+    private static final int VERSION1_18_2 = 2975;
+    private static final int VERSION1_19_2 = 3120;
+    private static final int VERSION1_19_4 = 3337;
+    private static final int VERSION1_20_1 = 3465;
+    private static final int VERSION1_20_2 = 3578;
+    private static final int VERSION1_20_4 = 3700;
+    private static final int VERSION1_20_5 = 3837;
+    private static final int VERSION1_21_1 = 3955;
+    private static final int VERSION1_21_3 = 4082; // Current
 
     private final TreeMap<Identifier, Serializer<? extends Data>> serializers = Maps.newTreeMap(
             SerializerRegistry.DEPENDENCY_ORDER_COMPARATOR
@@ -125,6 +138,7 @@ public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, 
             loadSettings();
             loadLocales();
             loadServer();
+            validateConfigFiles();
         });
 
         // Register commands
@@ -142,7 +156,7 @@ public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, 
 
     private void onEnable() {
         // Initial plugin setup
-        this.audiences = FabricServerAudiences.of(minecraftServer);
+        this.audiences = MinecraftServerAudiences.of(minecraftServer);
 
         // Check compatibility
         checkCompatibility();
@@ -214,7 +228,7 @@ public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, 
         log(Level.WARNING, """
                 **************
                 WARNING:
-                
+                                
                 HuskSync for Fabric is still in an alpha state and is
                 not considered production ready.
                 **************""");
@@ -272,6 +286,15 @@ public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, 
     @NotNull
     public Uniform getUniform() {
         return FabricUniform.getInstance(mod.getMetadata().getId());
+    }
+
+    @NotNull
+    @Override
+    public Map<Identifier, Data> getPlayerCustomDataStore(@NotNull OnlineUser user) {
+        return playerCustomDataStore.compute(
+                user.getUuid(),
+                (uuid, data) -> data == null ? Maps.newHashMap() : data
+        );
     }
 
     @Override
@@ -334,6 +357,24 @@ public class FabricHuskSync implements DedicatedServerModInitializer, HuskSync, 
     @NotNull
     public Version getMinecraftVersion() {
         return Version.fromString(minecraftServer.getVersion());
+    }
+
+    @NotNull
+    public int getDataVersion(@NotNull Version mcVersion) {
+        return switch (mcVersion.toStringWithoutMetadata()) {
+            case "1.16", "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5" -> VERSION1_16_5;
+            case "1.17", "1.17.1" -> VERSION1_17_1;
+            case "1.18", "1.18.1", "1.18.2" -> VERSION1_18_2;
+            case "1.19", "1.19.1", "1.19.2" -> VERSION1_19_2;
+            case "1.19.4" -> VERSION1_19_4;
+            case "1.20", "1.20.1" -> VERSION1_20_1;
+            case "1.20.2" -> VERSION1_20_2;
+            case "1.20.4" -> VERSION1_20_4;
+            case "1.20.5", "1.20.6" -> VERSION1_20_5;
+            case "1.21", "1.21.1" -> VERSION1_21_1;
+            case "1.21.2", "1.21.3" -> VERSION1_21_3;
+            default -> VERSION1_21_3; // Current supported ver
+        };
     }
 
     @NotNull
