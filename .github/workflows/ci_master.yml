@@ -1,7 +1,7 @@
 name: CI Tests
 on:
   push:
-    branches: [ 'minecraft/1.21.3' ]
+    branches: [ 'master' ]
     paths-ignore:
       - 'docs/**'
       - 'workflows/**'
