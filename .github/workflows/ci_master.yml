@@ -1,4 +1,5 @@
 name: CI Tests
+
 on:
   push:
     branches: [ 'master' ]
@@ -6,10 +7,11 @@ on:
       - 'docs/**'
       - 'workflows/**'
       - 'README.md'
-  workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
   checks: write
+
 jobs:
   build:
     name: 'Build - 1.21.3'
@@ -26,8 +28,6 @@ jobs:
           gradle-version: '8.8'
       - name: 'Checkout for CI 🛎️'
         uses: actions/checkout@v4
-        with:
-          ref: 'minecraft/1.21.3'
       - name: '[Current - 1.21.3] Build 🛎️'
         run: |
           ./gradlew clean build publish
@@ -36,13 +36,16 @@ jobs:
           SNAPSHOTS_MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
       - name: 'Publish Test Report 📊'
         uses: mikepenz/action-junit-report@v5
-        if: success() || failure()
+        if: success() || failure() # Continue on failure
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
       - name: 'Fetch Version String 📝'
         run: |
-          echo "VERSION_NAME=$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')" >> $GITHUB_ENV
+          echo "::set-output name=VERSION_NAME::$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')"
         id: fetch-version
+      - name: 'Set Version Variable 📝'
+        run: |
+          echo "version_name=${{steps.fetch-version.outputs.VERSION_NAME}}" >> $GITHUB_ENV
       - name: 'Create GitHub Release 📦'
         uses: softprops/action-gh-release@v1
         with:
